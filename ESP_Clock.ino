@@ -184,7 +184,7 @@ void handleRoot()
   html += ssid; html += "\"><br>\n";
   html += "<label for=\"password\">WiFi password: </label><input name=\"password\" type=\"password\" value=\"";
   html += password; html += "\"><br>\n";
-  html += "<label for=\"ntp_server\">WiFi password: </label><input name=\"ntp_server\" type=\"text\" value=\"";
+  html += "<label for=\"ntp_server\">NTP server: </label><input name=\"ntp_server\" type=\"text\" value=\"";
   html += ntp_server1; html += "\"><br>\n";
   html += "<label for=\"timezone\">Timezone string: </label><input name=\"timezone\" type=\"text\" value=\"";
   html += timezone; html += "\"><br>\n";
