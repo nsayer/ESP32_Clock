@@ -96,74 +96,6 @@ void showSetup()
   write_reg(MAX_REG_MASK_BOTH | DIGIT_MISC, 0); // blank
 }
 
-void setPreferences()
-{
-  preferences.begin(PREF_NAME, false);
-  preferences.putString("hostname", "espclock");
-  preferences.putString("ssid", "KFU-NET");
-  preferences.putString("password", "DTW2SJC!!");
-  preferences.putString("ntp_server", "0.us.pool.ntp.org");
-  preferences.putString("timezone", "EST5EDT,M3.2.0,M11.1.0");
-  preferences.putBool("ampm", true);
-  preferences.putBool("tenths", true);
-  preferences.putInt("brightness", 15);
-  preferences.putInt("colon_mode", 1);
-  preferences.end();
-  Serial.println("Preferences written\n");
-  while(true);
-}
-
-void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(115200);
-  //setPreferences();
-
-  pinMode(SS, OUTPUT);
-  digitalWrite(SS, HIGH);
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
-  SPI.begin(SCK, MISO, MOSI, SS);
-  write_reg(MAX_REG_CONFIG, MAX_REG_CONFIG_R | MAX_REG_CONFIG_S);
-  write_reg(MAX_REG_SCAN_LIMIT, 7); // display all 8 digits
-
-  write_reg(MAX_REG_TEST, 1);
-  delay(1000);
-  write_reg(MAX_REG_TEST, 0);
-
-  preferences.begin(PREF_NAME, true);
-  preferences.getString("hostname", hostname, sizeof(hostname));
-  preferences.getString("ssid", ssid, sizeof(ssid));
-  preferences.getString("password", password, sizeof(password));
-  preferences.getString("ntp_server", ntp_server1, sizeof(ntp_server1));
-  preferences.getString("timezone", timezone, sizeof(timezone));
-  ampm = preferences.getBool("ampm", true);
-  tenth_enable = preferences.getBool("tenths", true);
-  brightness = preferences.getInt("brightness", 15);
-  colon_mode = preferences.getInt("colon_mode", 1);
-  preferences.end();
-  write_reg(MAX_REG_INTENSITY, brightness);
-
-  WiFi.mode(WIFI_STA);
-  WiFi.setHostname(hostname);
-  WiFi.begin(ssid, password);
-
-  Serial.println("\nConnecting to WiFi Network ..");
-  showConnect();
-
-  int i = 6; 
-  while(WiFi.status() != WL_CONNECTED){
-    Serial.print(".");
-    write_reg(MAX_REG_MASK_BOTH | DIGIT_100_MSEC, _BV(i--));
-    if (i <= 0) i = 6;
-    delay(100);
-  }
-  write_reg(MAX_REG_CONFIG, MAX_REG_CONFIG_R | MAX_REG_CONFIG_S);
- 
-  Serial.println("\nConnected");
-
-  NTP.setTimeZone(timezone);
-  NTP.begin(ntp_server1, true);
-}
-
 char serverFinished = 0;
 
 void handleRoot()
@@ -267,8 +199,10 @@ void handleNotFound()
   server.send(404, "text/plain", "Not found");
 }
 
-void setupMode()
+void setupButton()
 {
+  Serial.println("Setup pressed\n");
+  showSetup();
   NTP.stop();
   WiFi.disconnect();
   WiFi.mode(WIFI_AP);
@@ -281,6 +215,63 @@ void setupMode()
   {
     server.handleClient();
   }
+  delay(5000);
+  ESP.restart();
+  while(true);
+}
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+
+  pinMode(SS, OUTPUT);
+  digitalWrite(SS, HIGH);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  SPI.begin(SCK, MISO, MOSI, SS);
+  write_reg(MAX_REG_CONFIG, MAX_REG_CONFIG_R | MAX_REG_CONFIG_S);
+  write_reg(MAX_REG_SCAN_LIMIT, 7); // display all 8 digits
+
+  write_reg(MAX_REG_TEST, 1);
+  delay(1000);
+  write_reg(MAX_REG_TEST, 0);
+
+  preferences.begin(PREF_NAME, true);
+  preferences.getString("hostname", hostname, sizeof(hostname));
+  preferences.getString("ssid", ssid, sizeof(ssid));
+  preferences.getString("password", password, sizeof(password));
+  preferences.getString("ntp_server", ntp_server1, sizeof(ntp_server1));
+  preferences.getString("timezone", timezone, sizeof(timezone));
+  ampm = preferences.getBool("ampm", true);
+  tenth_enable = preferences.getBool("tenths", true);
+  brightness = preferences.getInt("brightness", 15);
+  colon_mode = preferences.getInt("colon_mode", 1);
+  preferences.end();
+  write_reg(MAX_REG_INTENSITY, brightness);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.setHostname(hostname);
+  WiFi.begin(ssid, password);
+
+  Serial.println("\nConnecting to WiFi Network ..");
+  showConnect();
+
+  int i = 6; 
+  while(WiFi.status() != WL_CONNECTED){
+    if (digitalRead(BUTTON_PIN) == LOW)
+    {
+      setupButton();
+    }
+    Serial.print(".");
+    write_reg(MAX_REG_MASK_BOTH | DIGIT_100_MSEC, _BV(i--));
+    if (i <= 0) i = 6;
+    delay(100);
+  }
+  write_reg(MAX_REG_CONFIG, MAX_REG_CONFIG_R | MAX_REG_CONFIG_S);
+ 
+  Serial.println("\nConnected");
+
+  NTP.setTimeZone(timezone);
+  NTP.begin(ntp_server1, true);
 }
 
 int last_tenth = 99;
@@ -290,13 +281,7 @@ void loop() {
 
   if (digitalRead(BUTTON_PIN) == LOW)
   {
-    Serial.println("Setup pressed\n");
-    showSetup();
-    // and here we shunt over into the setup web UI
-    // eventually;
-    setupMode();
-    delay(5000);
-    ESP.restart();
+    setupButton();
   }
 
   timeval now;
