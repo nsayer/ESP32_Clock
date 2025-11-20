@@ -215,7 +215,7 @@ void setupButton()
   {
     server.handleClient();
   }
-  delay(5000);
+  delay(1000);
   ESP.restart();
   while(true);
 }
