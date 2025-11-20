@@ -72,7 +72,7 @@ void showConnect()
   write_reg(MAX_REG_DEC_MODE, 0);
   write_reg(MAX_REG_MASK_BOTH | DIGIT_10_HR, MASK_A | MASK_D | MASK_E | MASK_F); // C
   write_reg(MAX_REG_MASK_BOTH | DIGIT_1_HR, MASK_C | MASK_D | MASK_E | MASK_G); // o
-  write_reg(MAX_REG_MASK_BOTH | DIGIT_10_MIN, MASK_C | MASK_D | MASK_F | MASK_G); // n
+  write_reg(MAX_REG_MASK_BOTH | DIGIT_10_MIN, MASK_C | MASK_E | MASK_G); // n
   write_reg(MAX_REG_MASK_BOTH | DIGIT_1_MIN, MASK_A | MASK_D | MASK_E | MASK_F | MASK_G); // E
   write_reg(MAX_REG_MASK_BOTH | DIGIT_10_SEC, MASK_A | MASK_D | MASK_E | MASK_F); // C
   write_reg(MAX_REG_MASK_BOTH | DIGIT_1_SEC, MASK_D | MASK_E | MASK_F | MASK_G); // t
