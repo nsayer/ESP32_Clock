@@ -20,6 +20,7 @@
 
 #include <ESPNtpClient.h>
 #include <WiFi.h>
+#include <WebServer.h>
 #include <time.h>
 #include <SPI.h>
 #include <Preferences.h>
@@ -36,6 +37,8 @@ char timezone[64];
 char ampm, tenth_enable, brightness, colon_mode;
 
 Preferences preferences;
+
+WebServer server(80);
 
 #define PREF_NAME "ESPClock"
 
@@ -161,6 +164,125 @@ void setup() {
   NTP.begin(ntp_server1, true);
 }
 
+char serverFinished = 0;
+
+void handleRoot()
+{
+  String html;
+  if (strlen(ssid) == 0) strcpy(ssid, "default");
+  if (strlen(hostname) == 0) strcpy(hostname, "ESPClock");
+  if (strlen(ntp_server1) == 0) strcpy(ntp_server1, "0.us.pool.ntp.org");
+  if (strlen(timezone) == 0) strcpy(timezone, "UTC0");
+  if (brightness > 15) brightness = 15;
+  if (colon_mode > 2) colon_mode = 1;
+  
+  html += "<html><head><title>ESPClock configuration</title></head>\n";
+  html += "<body><form action=\"/submit\">\n";
+  html += "<label for=\"hostname\">My hostname: </label><input name=\"hostname\" type=\"text\" value=\"";
+  html += hostname; html += "\"><br>\n";
+  html += "<label for=\"ssid\">WiFi SSID: </label><input name=\"ssid\" type=\"text\" value=\"";
+  html += ssid; html += "\"><br>\n";
+  html += "<label for=\"password\">WiFi password: </label><input name=\"password\" type=\"password\" value=\"";
+  html += password; html += "\"><br>\n";
+  html += "<label for=\"ntp_server\">WiFi password: </label><input name=\"ntp_server\" type=\"text\" value=\"";
+  html += ntp_server1; html += "\"><br>\n";
+  html += "<label for=\"timezone\">Timezone string: </label><input name=\"timezone\" type=\"text\" value=\"";
+  html += timezone; html += "\"><br>\n";
+  
+  html += "<label for=\"ampm\">Clock style: </label><select name=\"ampm\"><option value=\"1\"";
+  if (ampm) html += " selected";
+  html += ">12 hour</option>\n";
+  html += "<option value=\"0\"";
+  if (!ampm) html += " selected";
+  html += ">24 hour</option></select><br>\n";
+
+  html += "<label for=\"colon_mode\">Colon style: </label><select name=\"colon_mode\"><option value=\"0\"";
+  if (colon_mode == 0) html += " selected";
+  html += ">off</option>\n";
+  html += "<option value=\"1\"";
+  if (colon_mode == 1) html += " selected";
+  html += ">on</option>\n";
+  html += "<option value=\"2\"";
+  if (colon_mode == 2) html += " selected";
+  html += ">blinking</option></select><br>\n";
+
+  html += "<label for=\"brightness\">Brightness: </label><select name=\"brightness\">";
+  for(int i = 0; i <= 15; i++)
+  {
+    html += "<option value=\"";
+    html += i;
+    html += "\"";
+    if (brightness == i) html += " selected";
+    html += ">";
+    html += i;
+    html += "</option>\n";
+  }
+  html += "</select><br>\n";
+
+  html += "<input type=\"submit\" name=\"Save\">\n";
+  html += "</form></body></html>\n";
+
+  server.send(200, "text/html", html);
+}
+
+void handleSubmit()
+{
+  String html;
+
+  String Shostname = server.arg("hostname");
+  String Sssid = server.arg("ssid");
+  String Spassword = server.arg("password");
+  String Sntp_server = server.arg("ntp_server");
+  String Stimezone = server.arg("timezone");
+  if (Shostname.isEmpty()) goto bad;
+  if (Sssid.isEmpty()) goto bad;
+  if (Spassword.isEmpty()) goto bad;
+  if (Sntp_server.isEmpty()) goto bad;
+  if (Stimezone.isEmpty()) goto bad;
+
+  preferences.begin(PREF_NAME, false);
+  preferences.putString("hostname", Shostname);
+  preferences.putString("ssid", Sssid);
+  preferences.putString("password", Spassword);
+  preferences.putString("ntp_server", Sntp_server);
+  preferences.putString("timezone", Stimezone);
+  preferences.end();
+
+  html += "<html><head><title>Preferences saved</title></head>\n";
+  html += "<body>Preferences have been saved. The clock will now restart.</body></html>\n";
+  server.send(200, "text/html", html);
+  serverFinished = 1;
+  return;
+
+  bad:
+  html += "<html><head><title>Bad arguments</title></head>\n";
+  html += "<body>Arguments are bad. Go back and try again.</body></html>\n";
+  server.send(200, "text/html", html);
+  return;
+
+}
+
+void handleNotFound()
+{
+  server.send(404, "text/plain", "Not found");
+}
+
+void setupMode()
+{
+  NTP.stop();
+  WiFi.disconnect();
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP("ESPClock");
+  server.on("/", handleRoot);
+  server.on("/submit", handleSubmit);
+  server.onNotFound(handleNotFound);
+  server.begin();
+  while(!serverFinished)
+  {
+    server.handleClient();
+  }
+}
+
 int last_tenth = 99;
 
 void loop() {
@@ -172,6 +294,7 @@ void loop() {
     showSetup();
     // and here we shunt over into the setup web UI
     // eventually;
+    setupMode();
     delay(5000);
     ESP.restart();
   }
