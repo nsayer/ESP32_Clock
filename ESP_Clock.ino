@@ -264,6 +264,18 @@ void setup() {
   write_reg(MAX_REG_TEST, 0);
 
   preferences.begin(PREF_NAME, true);
+  if (!preferences.isKey("hostname"))
+  {
+    // Set up the defaults for the string properties
+    preferences.end();
+    preferences.begin(PREF_NAME, false);
+    preferences.putString("hostname", "espclock");
+    preferences.putString("ssid", "none");
+    preferences.putString("ntp_server", "0.us.pool.ntp.org");
+    preferences.putString("timezone", "PST8PDT,M3.2.0,M11.1.0");
+    preferences.end();
+    preferences.begin(PREF_NAME, true);
+  }
   preferences.getString("hostname", hostname, sizeof(hostname));
   preferences.getString("ssid", ssid, sizeof(ssid));
   preferences.getString("password", password, sizeof(password));
