@@ -128,6 +128,13 @@ void handleRoot()
   if (!ampm) html += " selected";
   html += ">24 hour</option></select><br>\n";
 
+  html += "<label for=\"tenth_enable\">Tenth-of-a-second digit: </label><select name=\"tenth_enable\"><option value=\"1\"";
+  if (tenth_enable) html += " selected";
+  html += ">on</option>\n";
+  html += "<option value=\"0\"";
+  if (!tenth_enable) html += " selected";
+  html += ">off</option></select><br>\n";
+
   html += "<label for=\"colon_mode\">Colon style: </label><select name=\"colon_mode\"><option value=\"0\"";
   if (colon_mode == 0) html += " selected";
   html += ">off</option>\n";
@@ -160,17 +167,34 @@ void handleRoot()
 void handleSubmit()
 {
   String html;
+  int ampm_val, tenth_enable_val, colon_mode_val, brightness_val;
 
   String Shostname = server.arg("hostname");
   String Sssid = server.arg("ssid");
   String Spassword = server.arg("password");
   String Sntp_server = server.arg("ntp_server");
   String Stimezone = server.arg("timezone");
+  String Sampm = server.arg("ampm");
+  String Stenth_enable = server.arg("tenth_enable");
+  String Scolon_mode = server.arg("colon_mode");
+  String Sbrightness = server.arg("brightness");
   if (Shostname.isEmpty()) goto bad;
   if (Sssid.isEmpty()) goto bad;
   if (Spassword.isEmpty()) goto bad;
   if (Sntp_server.isEmpty()) goto bad;
   if (Stimezone.isEmpty()) goto bad;
+  if (Sampm.isEmpty()) goto bad;
+  if (Stenth_enable.isEmpty()) goto bad;
+  if (Scolon_mode.isEmpty()) goto bad;
+  if (Sbrightness.isEmpty()) goto bad;
+  ampm_val = Sampm.toInt();
+  tenth_enable_val = Stenth_enable.toInt();
+  colon_mode_val = Scolon_mode.toInt();
+  brightness_val = Sbrightness.toInt();
+  if (ampm_val < 0 || ampm_val > 1) goto bad;
+  if (tenth_enable_val < 0 || tenth_enable_val > 1) goto bad;
+  if (colon_mode_val < 0 || colon_mode_val > 2) goto bad;
+  if (brightness_val < 0 || brightness_val > 15) goto bad;
 
   preferences.begin(PREF_NAME, false);
   preferences.putString("hostname", Shostname);
@@ -178,6 +202,10 @@ void handleSubmit()
   preferences.putString("password", Spassword);
   preferences.putString("ntp_server", Sntp_server);
   preferences.putString("timezone", Stimezone);
+  preferences.putBool("ampm", ampm_val);
+  preferences.putBool("tenth_enable", tenth_enable_val);
+  preferences.putInt("colon_mode", colon_mode_val);
+  preferences.putInt("brightness", brightness_val);
   preferences.end();
 
   html += "<html><head><title>Preferences saved</title></head>\n";
@@ -242,7 +270,7 @@ void setup() {
   preferences.getString("ntp_server", ntp_server1, sizeof(ntp_server1));
   preferences.getString("timezone", timezone, sizeof(timezone));
   ampm = preferences.getBool("ampm", true);
-  tenth_enable = preferences.getBool("tenths", true);
+  tenth_enable = preferences.getBool("tenth_enable", true);
   brightness = preferences.getInt("brightness", 15);
   colon_mode = preferences.getInt("colon_mode", 1);
   preferences.end();
