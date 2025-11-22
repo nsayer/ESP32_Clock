@@ -149,11 +149,11 @@ void handleRoot()
   for(int i = 0; i <= 15; i++)
   {
     html += "<option value=\"";
-    html += (i + 1);
+    html += i;
     html += "\"";
     if (brightness == i) html += " selected";
     html += ">";
-    html += i;
+    html += (i + 1);
     html += "</option>\n";
   }
   html += "</select><br>\n";
