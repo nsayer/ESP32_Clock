@@ -21,6 +21,8 @@
 #include <ESPNtpClient.h>
 #include <WiFi.h>
 #include <WebServer.h>
+#include <ESPmDNS.h>
+#include <DNSServer.h>
 #include <time.h>
 #include <SPI.h>
 #include <Preferences.h>
@@ -100,6 +102,13 @@ char serverFinished = 0;
 
 void handleRoot()
 {
+  String hostlocal = String(hostname) + String(".local");
+  if (server.hostHeader() != hostlocal)
+  {
+    server.sendHeader("Location", String("http://") + hostlocal);
+    server.send(302, "text/plain", "");
+    return;
+  }
   String html;
   if (strlen(ssid) == 0) strcpy(ssid, "default");
   if (strlen(hostname) == 0) strcpy(hostname, "ESPClock");
@@ -235,12 +244,20 @@ void setupButton()
   WiFi.disconnect();
   WiFi.mode(WIFI_AP);
   WiFi.softAP("ESPClock");
+  if (!MDNS.begin(hostname))
+  {
+    Serial.println("Failed to register mDNS hostname!");
+  }
+  DNSServer dnsServer;
+  dnsServer.setErrorReplyCode(DNSReplyCode::NoError);
+  dnsServer.start(53, "*", WiFi.softAPIP());
   server.on("/", handleRoot);
   server.on("/submit", handleSubmit);
   server.onNotFound(handleNotFound);
   server.begin();
   while(!serverFinished)
   {
+    dnsServer.processNextRequest();
     server.handleClient();
   }
   delay(1000);
@@ -331,8 +348,10 @@ void loop() {
     return;
   last_tenth = tenth;
 
-  if (NTP.syncStatus() != 0) {
-    Serial.println("No sync");
+  int status = NTP.syncStatus();
+  if (status != 0) {
+    //Serial.print("No sync: ");
+    //Serial.println(status);
     showNoNtp();
     return;
   }
@@ -349,9 +368,11 @@ void loop() {
       hour = 12;
   }
 
+/*
   char buf[64];
   snprintf(buf, sizeof(buf), "%02d, %02d, %02d, %01d %s", hour, lt->tm_min, lt->tm_sec, now.tv_usec / 100000, isPm?"PM":"AM");
   Serial.println(buf);
+*/
 
   unsigned char decode_mask = (unsigned char)(~_BV(DIGIT_MISC)); // All decode except the misc digit.
   if (ampm && hour < 10) {
