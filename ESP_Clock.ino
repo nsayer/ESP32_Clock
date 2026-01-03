@@ -117,7 +117,15 @@ void handleRoot()
   if (brightness > 15) brightness = 15;
   if (colon_mode > 2) colon_mode = 1;
   
-  html += "<html><head><title>ESPClock configuration</title></head>\n";
+  html += "<html><head><title>ESPClock configuration</title>\n";
+  html += "<script>\n";
+  html += "function tzselected() {\n";
+  html += "  var tz = document.getElementById(\"tzpicker\").value;\n";
+  html += "  if (!tz) return;\n";
+  html += "  document.getElementById(\"tzline\").value = tz;";
+  html += "}\n";
+  html += "</script>\n";
+  html += "</head>\n";
   html += "<body><form action=\"/submit\">\n";
   html += "<label for=\"hostname\">My hostname: </label><input name=\"hostname\" type=\"text\" value=\"";
   html += hostname; html += "\"><br>\n";
@@ -127,7 +135,16 @@ void handleRoot()
   html += password; html += "\"><br>\n";
   html += "<label for=\"ntp_server\">NTP server: </label><input name=\"ntp_server\" type=\"text\" value=\"";
   html += ntp_server1; html += "\"><br>\n";
-  html += "<label for=\"timezone\">Timezone string: </label><input name=\"timezone\" type=\"text\" value=\"";
+  html += "<label for=\"tzpicker\">Timezone: </label><select id=\"tzpicker\" onchange=\"tzselected()\">\n";
+  html += "<option value="">Select from popular zones or enter a string below</option>\n";
+  html += "<option value=\"UTC0\">UTC</option>\n";
+  html += "<option value=\"PST8PDT,M3.2.0,M11.1.0\">Pacific time</option>\n";
+  html += "<option value=\"MST7MDT,M3.2.0,M11.1.0\">Mountain time</option>\n";
+  html += "<option value=\"MST7\">Mountain time (no DST)</option>\n";
+  html += "<option value=\"CST6CDT,M3.2.0,M11.1.0\">Central time</option>\n";
+  html += "<option value=\"EST5EDT,M3.2.0,M11.1.0\">Eastern time</option>\n";
+  html += "</select><br>\n";
+  html += "<label for=\"timezone\">Timezone string: </label><input name=\"timezone\" id=\"tzline\" type=\"text\" value=\"";
   html += timezone; html += "\"><br>\n";
   
   html += "<label for=\"ampm\">Clock style: </label><select name=\"ampm\"><option value=\"1\"";
