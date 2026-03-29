@@ -102,13 +102,6 @@ char serverFinished = 0;
 
 void handleRoot()
 {
-  String hostlocal = String(hostname) + String(".local");
-  if (server.hostHeader() != hostlocal)
-  {
-    server.sendHeader("Location", String("http://") + hostlocal);
-    server.send(302, "text/plain", "");
-    return;
-  }
   String html;
   if (strlen(ssid) == 0) strcpy(ssid, "default");
   if (strlen(hostname) == 0) strcpy(hostname, "ESPClock");
@@ -250,7 +243,8 @@ void handleSubmit()
 
 void handleNotFound()
 {
-  server.send(404, "text/plain", "Not found");
+  server.sendHeader("Location", String("http://") + WiFi.softAPIP().toString() + "/");
+  server.send(302, "text/plain", "");
 }
 
 void setupButton()
