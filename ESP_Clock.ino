@@ -110,7 +110,14 @@ void handleRoot()
   if (brightness > 15) brightness = 15;
   if (colon_mode > 2) colon_mode = 1;
   
-  html += "<html><head><title>ESPClock configuration</title>\n";
+  html += "<html><head>\n";
+  html += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
+  html += "<title>ESP Clock Setup</title>\n";
+  html += "<style>\n";
+  html += "  body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.5; }\n";
+  html += "  input, select, button { width: 100%; padding: 12px; margin: 10px 0; font-size: 1rem; }\n";
+  html += "  button { background: #0066cc; color: white; border: none; border-radius: 8px; }\n";
+  html += "</style>\n";
   html += "<script>\n";
   html += "function tzselected() {\n";
   html += "  var tz = document.getElementById(\"tzpicker\").value;\n";
@@ -227,14 +234,18 @@ void handleSubmit()
   preferences.putInt("brightness", brightness_val);
   preferences.end();
 
-  html += "<html><head><title>Preferences saved</title></head>\n";
+  html += "<html><head><title>Preferences saved</title>\n";
+  html += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
+  html += "</head>\n";
   html += "<body>Preferences have been saved. The clock will now restart.</body></html>\n";
   server.send(200, "text/html", html);
   serverFinished = 1;
   return;
 
   bad:
-  html += "<html><head><title>Bad arguments</title></head>\n";
+  html += "<html><head><title>Bad arguments</title>\n";
+  html += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
+  html += "</head>\n";
   html += "<body>Arguments are bad. Go back and try again.</body></html>\n";
   server.send(200, "text/html", html);
   return;
