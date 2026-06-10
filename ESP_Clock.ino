@@ -348,6 +348,11 @@ void setup() {
   write_reg(MAX_REG_CONFIG, MAX_REG_CONFIG_R | MAX_REG_CONFIG_S);
  
   Serial.println("\nConnected");
+  
+  if (!MDNS.begin(hostname))
+  {
+    Serial.println("Failed to register mDNS hostname!");
+  }
 
   NTP.setTimeZone(timezone);
   NTP.begin(ntp_server1, true);
