@@ -44,6 +44,9 @@ WebServer server(80);
 
 #define PREF_NAME "ESPClock"
 
+#define NO_NTP_WARN_SEC (90 * 60)
+#define NO_NTP_REBOOT_SEC (120 * 60)
+
 // 16 MHz
 #define SPI_SPEED (16000000)
 
@@ -291,6 +294,10 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
 
+  // Reset system time to zero so that now.tv_sec acts as uptime until first NTP sync
+  struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+  settimeofday(&tv, NULL);
+
   pinMode(SS, OUTPUT);
   digitalWrite(SS, HIGH);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -375,11 +382,15 @@ void loop() {
     return;
   last_tenth = tenth;
 
-  int status = NTP.syncStatus();
-  if (status != 0) {
-    //Serial.print("No sync: ");
-    //Serial.println(status);
+  time_t lastSync = NTP.getLastNTPSync();
+  if (lastSync == 0 || ((now.tv_sec - lastSync) > NO_NTP_WARN_SEC)) {
     showNoNtp();
+    if ((now.tv_sec - lastSync) > NO_NTP_REBOOT_SEC) {
+      Serial.println("No NTP for too long. Rebooting.");
+      delay(200);
+      ESP.restart();
+      while(true);
+    }
     return;
   }
 
