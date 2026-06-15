@@ -55,6 +55,14 @@ void showFail(int code)
   write_reg(MAX_REG_MASK_BOTH | DIGIT_MISC, 0); // blank
 }
 
+void bumpProgress()
+{
+    static uint8_t progress = 6;
+
+    write_reg(MAX_REG_MASK_BOTH | DIGIT_100_MSEC, _BV(progress--));
+    if (progress <= 0) progress = 6;
+}
+
 void applyFirmwareUpdate(const char* path)
 {
   uint8_t numChunks;
@@ -124,8 +132,7 @@ void applyFirmwareUpdate(const char* path)
             //Serial.printf("Erasing sector %d\n", sec);
             //Serial.flush();
             //delay(10);
-            write_reg(MAX_REG_MASK_BOTH | DIGIT_100_MSEC, _BV(progress--));
-            if (progress <= 0) progress = 6;
+            bumpProgress();
             esp_err_t err = esp_flash_erase_region(NULL, sec * sectorSize, sectorSize);
             if (err != ESP_OK) {
                 f.close();
@@ -141,8 +148,7 @@ void applyFirmwareUpdate(const char* path)
         uint32_t offset = 0;
 
         while (remaining > 0) {
-            write_reg(MAX_REG_MASK_BOTH | DIGIT_100_MSEC, _BV(progress--));
-            if (progress <= 0) progress = 6;
+            bumpProgress();
 
             size_t toRead = (remaining > writeSize) ? writeSize : remaining;
             int bytesRead = f.read(buffer, toRead);
@@ -168,6 +174,7 @@ void applyFirmwareUpdate(const char* path)
     }
 
     f.close();
+    SPIFFS.remove(FW_FILENAME);
     return;
 
 bad:
